@@ -1,0 +1,76 @@
+---
+title: "An Analysis of 2022 ACS Data from IPUMS "
+author: Ricky Yuan
+format: pdf
+editor: source
+---
+
+```{r}
+library(haven)
+library(tidyverse)
+install.packages("labelled")
+library(labelled)
+library(dplyr)
+
+ipums_extract <- read_dta("usa_00004.dta.gz")
+
+ipums_extract <- 
+  ipums_extract %>%
+  select(stateicp, educ, educd) %>%
+  as_factor()
+
+```
+
+Using the data from 2022 ACS, showing the respondents in each state of STATEICP that had a doctoral degree as their highest educational attainment of EDUC.
+
+```{r}
+doctoral_counts <- ipums_extract |>
+  filter(educd == "doctoral degree") |> 
+  group_by(stateicp) |>
+  summarise(doctoral_count = n()) |> 
+  ungroup()
+doctoral_counts
+```
+
+# Instructions on how to obtain the data.
+
+The data from the website of IMPUS of USA, and the I creates the account that can help me to download the data. After log in, selecting data and click on “SELECT DATA” in the top navigation bar to access the data selection page. In the Sample Selection section, select data for the 2022 ACS. Next, click on “SELECT VARIABLES” on the left side of the page. In the search bar, look for “STATEICP” (for state) and add it to the data cart, then look for “EDUCD” (for educational attainment). After selecting your variables, click View Cart at the top right of the page and then click Create Data Extract. Next, name the extract and submit the request, which will be processed in the background. Check the status in My Data Extracts when the extraction is complete. Finally, download the .csv file.
+
+# A brief overview of the ratio estimators approach.
+
+Use ratio estimation to estimate population totals or means from known ratios derived from a sample. When there is a known number of a particular characteristic in one population and a similar number is estimated for the rest of the population. In this method, a ratio is calculated by dividing the number of people with the characteristic in question by the total population in the sample and applying that ratio to the rest of the population. When the exact population size is not known, but the ratio can be estimated from the sample, a generalized estimate can be made of the total number of other populations or areas.
+
+# Your estimates and the actual number of respondents.
+
+```{r}
+total_respondents_california <- 391171
+
+doctoral_respondents_california <- doctoral_counts |>
+  filter(stateicp == "california") |>
+  pull(doctoral_count)
+
+
+doctoral_ratio_california <- doctoral_respondents_california / total_respondents_california
+
+
+estimated_total_counts <- doctoral_counts |>
+  mutate(estimated_total = doctoral_count / doctoral_ratio_california)
+
+
+actual_counts <- ipums_extract |>
+  group_by(stateicp) |>
+  summarise(actual_total = n()) |>  
+  ungroup()
+
+comparison <- doctoral_counts |>
+  left_join(actual_counts, by = "stateicp") |>
+  left_join(estimated_total_counts, by = "stateicp") |>
+  select(stateicp, actual_total, estimated_total)
+
+comparison
+```
+
+# Some explanation of why you think they are different.
+
+Differences between actual and estimated totals occur when using the ratio estimation method. This method is consistent based on the ratios observed in California. However, this assumption may not hold true. Education levels, demographics, and population composition can vary widely among states. For example, some states may have higher or lower proportions of doctoral degree holders due to economic conditions, access to higher education, or immigration patterns. Thus, applying California's rates to other states may lead to overestimates or underestimates, especially in states with markedly different educational profiles. These differences highlight the limitations of ratio estimates when the distribution of demographic characteristics is not uniform across regions.
+
