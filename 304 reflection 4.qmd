@@ -1,0 +1,88 @@
+---
+title: "An Analysis of 2022 ACS Data from IPUMS "
+author: Ricky Yuan
+format: pdf
+editor: source
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library("haven")
+library("tidyverse")
+library("labelled")
+library("dplyr")
+
+
+ipums_extract <- read_csv("Downloads\\usa_00004.csv")
+
+
+
+ipums_extract <- 
+  ipums_extract %>%
+  select(STATEICP, EDUCD) %>%
+  as_factor()
+
+```
+
+Using the data from 2022 ACS, showing the respondents in each state of STATEICP that had a doctoral degree as their highest educational attainment of EDUC.
+
+```{r, echo=FALSE}
+doctoral_counts <- ipums_extract |>
+  filter(EDUCD == 116) |> 
+  group_by(STATEICP) |>
+  summarise(doctoral_count = n()) |> 
+  ungroup()
+doctoral_counts
+```
+
+# Instructions on how to obtain the data.
+
+The data from the website of IMPUS of USA, and the I creates the account that can help me to download the data. After log in, selecting data and click on “SELECT DATA” in the top navigation bar to access the data selection page. In the Sample Selection section, select data for the 2022 ACS. Next, click on “SELECT VARIABLES” on the left side of the page. In the search bar, look for “STATEICP” (for state) and add it to the data cart, then look for “EDUCD” (for educational attainment). After selecting your variables, click View Cart at the top right of the page and then click Create Data Extract. Next, name the extract and submit the request, which will be processed in the background. Check the status in My Data Extracts when the extraction is complete. Finally, download the .csv file.
+
+# A brief overview of the ratio estimators approach.
+
+The ratio estimators approach uses the proportion of respondents with doctoral degrees in
+California to estimate the total number of respondents in each state across the U.S. Specifically,
+we calculate the ratio of doctoral degree holders to the total respondents in California and
+assume this ratio is similar across other states. By applying this ratio to the total population of
+each state, we can estimate the number of doctoral degree holders of each state. This approach
+leverages California’s data as a baseline to make inferences about the broader distribution of
+education levels across the country.
+
+Based on the dataset, we find that the total number of respondents in California is 391,171,
+with 6,336 of them holding doctoral degrees. This results the doctoral degree holders ratio of
+approximately 0.01619752.
+
+# Your estimates and the actual number of respondents.
+
+```{r, echo=FALSE}
+total_respondents_california <- 391171
+
+doctoral_respondents_california <- doctoral_counts |>
+  filter(STATEICP == 71) |>
+  pull(doctoral_count)
+
+
+doctoral_ratio_california <- doctoral_respondents_california / total_respondents_california
+
+
+estimated_total_counts <- doctoral_counts |>
+  mutate(estimated_total = doctoral_count / doctoral_ratio_california)
+
+
+actual_counts <- ipums_extract |>
+  group_by(STATEICP) |>
+  summarise(actual_total = n()) |>  
+  ungroup()
+
+comparison <- doctoral_counts |>
+  left_join(actual_counts, by = "STATEICP") |>
+  left_join(estimated_total_counts, by = "STATEICP") |>
+  select(STATEICP, actual_total, estimated_total)
+
+comparison
+```
+
+# Some explanation of why you think they are different.
+
+It is biased to assume that the proportion in one state (e.g., California) is representative of other states. The reasons for the bias in the projections are as follows:The main reasons for differences between estimated and actual respondent numbers include the similarity assumption, which presumes uniformity across states in the ratio of doctoral degree holders. However, each state has unique demographics, economic conditions, and educational policies. States with more universities and research institutions naturally have more doctoral degree holders compared to rural or economically less developed states. Additionally, the non-uniform distribution of advanced degrees is evident: regions dominated by high-skill industries like technology, healthcare, or academia (e.g., California's Silicon Valley or Boston's healthcare hubs) have higher demand for and attainment of advanced degrees. These areas offer favorable job markets for advanced degree holders, attracting more individuals pursuing such qualifications. In contrast, states with less advanced economies show significant differences in degree distribution. Extrapolating national estimates based on high-tech regions can distort results, misrepresenting rural or non-high-tech areas. Lastly, sampling bias may occur if the sample data does not fully represent the population in certain states, leading to inaccurate estimates of educational attainment.
+
