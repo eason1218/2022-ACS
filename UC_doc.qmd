@@ -1,0 +1,96 @@
+---
+title: "An Analysis of 2022 ACS Data from IPUMS"
+author: "Group36"
+date: Oct/3/2024
+format: pdf
+---
+
+# Introduction
+
+Using the data from 2022 ACS, showing the respondents in each state of STATEICP that had a doctoral degree as their highest educational attainment of EDUC.
+
+# Instructions on how to obtain the data
+The data from the website of IMPUS of USA, and the I creates the account that can help me to download the data. After log in, selecting data and click on “SELECT DATA” in the top navigation bar to access the data selection page. In the Sample Selection section, select data for the 2022 ACS. Next, click on “SELECT VARIABLES” on the left side of the page. In the search bar, look for “STATEICP” (for state) and add it to the data cart, then look for “EDUCD” (for educational attainment). After selecting your variables, click View Cart at the top right of the page and then click Create Data Extract. Next, name the extract and submit the request, which will be processed in the background. Check the status in My Data Extracts when the extraction is complete. Finally, download the .csv file.
+
+# overview of the ratio estimators approach
+
+The ratio estimators approach uses the proportion of respondents with doctoral degrees in California to estimate the total number of respondents in each state across the U.S. Specifically, we calculate the ratio of doctoral degree holders to the total respondents in California and assume this ratio is similar across other states. By applying this ratio to the total population of each state, we can estimate the number of doctoral degree holders of each state. This approach leverages California's data as a baseline to make inferences about the broader distribution of education levels across the country. 
+
+Based on the dataset, we find that the total number of respondents in California is 391,171, with 6,336 of them holding doctoral degrees. This results the doctoral degree holders ratio of approximately 0.01619752.
+
+```{r}
+#| echo: false
+#| warning: false
+library(readr)
+
+# Define the column specifications based on fixed width
+col_specs <- fwf_cols(
+  STATEICP = c(55, 56),
+  EDUCD = c(86, 88)
+)
+
+# Read the fixed-width file
+data <- read_fwf("Downloads\\usa_00002.dat", col_specs)
+
+# Filter rows where STATEICP is 71 and EDUCD is 116
+filtered_data <- subset(data, STATEICP == 71)
+filtered_data2 <- subset(data, STATEICP == 71 & EDUCD == 116)
+
+# Count the number of rows
+California_survey_number <- nrow(filtered_data)
+California_survey_doctor <- nrow(filtered_data2)
+# Print the count
+
+ratio <- California_survey_doctor/California_survey_number
+
+
+# Create a mapping of STATEICP codes to state names
+state_map <- c(
+  "01" = "Connecticut", "02" = "Maine", "03" = "Massachusetts", "04" = "New Hampshire",
+  "05" = "Rhode Island", "06" = "Vermont", "11" = "Delaware", "12" = "New Jersey",
+  "13" = "New York", "14" = "Pennsylvania", "21" = "Illinois", "22" = "Indiana",
+  "23" = "Michigan", "24" = "Ohio", "25" = "Wisconsin", "31" = "Iowa", 
+  "32" = "Kansas", "33" = "Minnesota", "34" = "Missouri", "35" = "Nebraska",
+  "36" = "North Dakota", "37" = "South Dakota", "40" = "Virginia", "41" = "Alabama",
+  "42" = "Arkansas", "43" = "Florida", "44" = "Georgia", "45" = "Louisiana",
+  "46" = "Mississippi", "47" = "North Carolina", "48" = "South Carolina", 
+  "49" = "Texas", "51" = "Kentucky", "52" = "Maryland", "53" = "Oklahoma",
+  "54" = "Tennessee", "56" = "West Virginia", "61" = "Arizona", "62" = "Colorado",
+  "63" = "Idaho", "64" = "Montana", "65" = "Nevada", "66" = "New Mexico",
+  "67" = "Utah", "68" = "Wyoming", "71" = "California", "72" = "Oregon",
+  "73" = "Washington", "81" = "Alaska", "82" = "Hawaii", "83" = "Puerto Rico",
+  "96" = "State groupings (1980 Urban/rural sample)", 
+  "97" = "Military/Mil. Reservations", "98" = "District of Columbia", 
+  "99" = "State not identified"
+)
+
+# Map STATEICP codes to state names
+data$STATE_NAME <- state_map[as.character(data$STATEICP)]
+
+# Count total population and EDUCD == 116 population for each state
+state_summary <- aggregate(data.frame(Total_Pop = 1, EDUCD_116_Pop = data$EDUCD == 116), 
+                           by = list(State = data$STATE_NAME), 
+                           FUN = sum)
+
+
+# Add a column to predict by ratio
+state_summary$Predicted_Pop <- state_summary$Total_Pop * ratio
+
+# Create a table as a data frame
+state_summary_table <- data.frame(
+  State = state_summary$State,
+  Survey_Population = state_summary$Total_Pop,
+  Doctoral_Degree = state_summary$EDUCD_116_Pop,
+  Predicted_Population = state_summary$Predicted_Pop
+)
+
+
+library(knitr)
+kable(state_summary_table, format = "markdown", caption = "State-wise Population Summary")
+
+
+```
+
+# explanation
+
+It is biased to assume that the proportion in one state (e.g., California) is representative of other states. The reasons for the bias in the projections are as follows:The main reasons for differences between estimated and actual respondent numbers include the similarity assumption, which presumes uniformity across states in the ratio of doctoral degree holders. However, each state has unique demographics, economic conditions, and educational policies. States with more universities and research institutions naturally have more doctoral degree holders compared to rural or economically less developed states. Additionally, the non-uniform distribution of advanced degrees is evident: regions dominated by high-skill industries like technology, healthcare, or academia (e.g., California's Silicon Valley or Boston's healthcare hubs) have higher demand for and attainment of advanced degrees. These areas offer favorable job markets for advanced degree holders, attracting more individuals pursuing such qualifications. In contrast, states with less advanced economies show significant differences in degree distribution. Extrapolating national estimates based on high-tech regions can distort results, misrepresenting rural or non-high-tech areas. Lastly, sampling bias may occur if the sample data does not fully represent the population in certain states, leading to inaccurate estimates of educational attainment.
