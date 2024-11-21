@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repo provides students with a foundation for their own projects associated with *Telling Stories with Data*. You do not need every aspect for every paper and you should delete aspects that you do not need.
+This repo aims to estimate the total number of respondents in each U.S. state using the 2022 ACS data from IPUMS. By analyzing the number of respondents with doctoral degrees and applying the ratio estimators approach, the study extrapolates total population estimates across states. The results highlight discrepancies due to variations in demographics, economic conditions, and educational distributions, emphasizing the limitations of assuming uniformity across states.
 
 
 ## File Structure
