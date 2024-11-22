@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repo aims to estimate the total number of respondents in each U.S. state using the 2022 ACS data from IPUMS. By analyzing the number of respondents with doctoral degrees and applying the ratio estimators approach, the study extrapolates total population estimates across states. The results highlight discrepancies due to variations in demographics, economic conditions, and educational distributions, emphasizing the limitations of assuming uniformity across states.
+This repo aims to estimate the total number of respondents in each U.S. state using the 2022 ACS data from IPUMS. By analyzing the number of respondents with doctoral degrees and applying the ratio estimators approach, the study extrapolates total population estimates across states. The results highlight discrepancies due to variations in demographics, economic conditions, and educational distributions, emphasizing the limitations of assuming uniformity across states. The data is sourced from the [IPUMS USA](https://usa.ipums.org/usa/) platform. Steps to obtain the dataset are detailed in the report.
 
 
 ## File Structure
